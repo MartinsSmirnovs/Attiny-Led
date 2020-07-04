@@ -1,56 +1,70 @@
 #include <avr/io.h>
 #include <stdint.h>
 
-int main(void)
+void timer(uint16_t *tc, uint16_t *del)
 {
-  TCCR0B |= 0b0000001; //timer counter control register B on normal mode
-  uint16_t timeCount = 0;
-  uint16_t delay = 6000;
-
-  while (timeCount != delay)
+  //time counter
+  if (TCNT0 == 255)
+    *tc += 1;
+  //executes if timeCount time units have passed
+  if (*tc >= *del - 1)
   {
-    if (TCNT0 == 255) //timer counter
-      timeCount++;
-
-    if (timeCount == delay - 1) //executes if timeCount time units have passed
-    {
-      PORTB |= 0b00001000; //PORTB register, pin 3 HIGH
-      DDRB |= 0b00001000;  //DDRB register, pin 3 HIGH
-    }
+    //PB3 HIGH
+    DDRB |= (1 << PB3);
+    PORTB |= (1 << PB3);
   }
-  return 0;
 }
 
-// #include <avr/io.h>
-// #include <stdint.h>
+int main(void)
+{
+  //timer counter control register B on normal mode
+  TCCR0B |= 0b0000010;
 
-// int main(void)
-// {
-//   TCCR0B |= 0b0000001; //timer counter control register B on normal mode
-//   uint16_t timeCount = 0;
-//   uint16_t delay = 256;
+  //time counting variables
+  uint16_t timeCount = 0;
+  uint16_t delay = 1000;
 
-//   while (1)
-//   {
-//     if (TCNT0 == 255) //timer counter
-//     {
-//       timeCount++;
-//     }
+  //read and save input states
+  bool powerIn;
+  
+  //for keeping pins turned off
+  bool off;
 
-//     if (timeCount == delay) //executes if delay time units have passed
-//     {
-//       timeCount = 0;
-//       if (PORTB == 8)
-//       {
-//         PORTB &= 0b00000000; //PORTB register, pin 3 LOW
-//         DDRB &= 0b00000000;  //DDRB register, pin 3 LOW
-//       }
-//       else //if all bits are 0
-//       {
-//         PORTB |= 0b00001000; //PORTB register, pin 3 HIGH
-//         DDRB |= 0b00001000;  //DDRB register, pin 3 HIGH
-//       }
-//     }
-//   }
-//   return 0;
-// }
+  //sets up PB4 as input
+  PORTB |= (1 << PB4);
+  MCUCR |= (1 << PB4);
+
+  //main loop
+  while (true)
+  {
+    //reads 19V input
+    powerIn = ((PINB & 16)) ? false : true;
+
+    if (powerIn)
+    {
+      // toggle 19V OUT
+      DDRB |= (1 << PB0);
+      PORTB |= (1 << PB0);
+
+      //turn off 12V OUT
+      off = ((PINB & 2)) ? true : false;
+      DDRB ^= (off << PB1);
+      PORTB ^= (off << PB1);
+    }
+    else
+    {
+      //toggle 12V OUT
+      DDRB |= (1 << PB1);
+      PORTB |= (1 << PB1);
+
+      //turn off 19V OUT
+      off = ((PINB & 1)) ? true : false;
+      DDRB ^= (off << PB0);
+      PORTB ^= (off << PB0);
+    }
+    //turns on slow start output
+    timer(&timeCount, &delay);
+  }
+
+  return 0;
+}
