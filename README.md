@@ -1,6 +1,6 @@
 # Attiny-Led
 # Table of contents
-- [Usage](https://github.com/Onii-Chaan/BtClassic.h/blob/master/README.md#usage)
+- [Usage](https://github.com/Onii-Chaan/Attiny-Led/tree/master#usage)
 
 # Usage
 Attiny13a register code examples. 
